@@ -17,43 +17,52 @@ router.get('/', (req, res) => {
     res.json('route client!');
 });
 
-router.post('/signup', (req, res) => {
-    const qClient = "call CadCli(?)";
-    const qLogin = "call AddLogin(0, ?)";
-    const qAddress = "call AddEnd(?)";
+router.post('/signup', async (req, res) => {
+    try {
+        const qClient = "call CadCli(?)";
+        const qLogin = "call AddLogin(0, ?)";
+        const qAddress = "call AddEnd(?)";
 
-    const valuesClient = [
-        req.body.Cpf,
-        req.body.Nome,
-        req.body.Email,
-        req.body.Telefone,
-        req.body.Cep
-    ]
+        const valuesClient = [
+            req.body.Cpf,
+            req.body.Nome,
+            req.body.Email,
+            req.body.Telefone,
+            req.body.Cep
+        ]
 
-    const valuesLogin = [
-        req.body.Email,
-        req.body.Senha
-    ]
+        const valuesLogin = [
+            req.body.Email,
+            req.body.Senha
+        ]
 
-    const valuesAddress = [
-        req.body.Cep,
-        req.body.Logradouro,
-        req.body.Uf,
-        req.body.NomeCid,
-        req.body.NumeroEnd,
-        req.body.Complemento
-    ]
+        const valuesAddress = [
+            req.body.Cep,
+            req.body.Logradouro,
+            req.body.Uf,
+            req.body.NomeCid,
+            req.body.NumeroEnd,
+            req.body.Complemento
+        ]
 
-    mySql.query(qClient, [valuesClient], (err) => {
-        if (err) return res.json(err);
-        mySql.query(qLogin, [valuesLogin], (err) => {
-            if (err) return res.json(err);
-            mySql.query(qAddress, [valuesAddress], (err) => {
-                if (err) return res.json(err);
-                res.json("Customer has been registered successfully!");
-            })
+        await executeQuery(qClient, valuesClient);
+        await executeQuery(qLogin, valuesLogin);
+        await executeQuery(qAddress, valuesAddress);
+
+        res.json("Customer has been registered successfully!");
+    }
+    catch(err){
+        res.json(err);
+    }
+})
+
+function executeQuery(query, values) {
+    return new Promise((resolve, reject) => {
+        mySql.query(query, [values], (err) => {
+            if (err) reject(err);
+            else resolve();
         })
     })
-})
+}
 
 export default router;
