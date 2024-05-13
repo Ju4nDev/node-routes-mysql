@@ -11,7 +11,7 @@ app.use(cors());
 
 app.use('/', client);
 
-app.use('/signup', client);
+app.post('/signup', client);
 
 app.listen(8081, () => {
     console.log('listening');
