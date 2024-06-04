@@ -6,6 +6,7 @@ import books from './routes/books.js';
 import genres from './routes/genre.js';
 import publishingCompany from './routes/publishingCompany.js';
 import author from './routes/author.js';
+import admin from './routes/admin.js';
 
 
 const app = express();
@@ -18,6 +19,8 @@ app.use('/book', books);
 app.use('/genre', genres);
 app.use('/publishingcompany', publishingCompany);
 app.use('/author', author);
+
+app.use('/admin', admin);
 
 app.post('/signup', client);
 
