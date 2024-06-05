@@ -14,15 +14,13 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.use('/', client);
+app.use('/client', client);
+app.use('/admin', admin);
+
 app.use('/book', books);
 app.use('/genre', genres);
 app.use('/publishingcompany', publishingCompany);
 app.use('/author', author);
-
-app.use('/admin', admin);
-
-app.post('/signup', client);
 
 app.listen(8081, () => {
     console.log('listening');
