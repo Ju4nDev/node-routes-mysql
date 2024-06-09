@@ -30,14 +30,13 @@ router.post("/login", async (req, res) => {
         //LÓGICA PARA COMPARAR A SENHA ENVIADA PELA APLICAÇÃO COM O HASH DO BANCO
         const match = await bcryptjs.compare(password, user.Senha);
 
-        if(match){
-          res.json({ message: "Login Successful", user: { Email: user.Email } });
-        }
-        else 
-          res.json({ message: "Invalid Credentials" });
-      } 
-      else 
-          res.json({ message: "Invalid credentials" });
+        if (match) {
+          res.json({
+            message: "Login Successful",
+            user: { Email: user.Email, Id: user.IdCli },
+          });
+        } else res.json({ message: "Invalid Credentials" });
+      } else res.json({ message: "Invalid credentials" });
     }
   });
 });
@@ -75,6 +74,143 @@ router.post("/", async (req, res) => {
   }
 });
 
+//ROTA PARA PEGAR DADOS DO USUARIO ESPECIFICO
+router.get("/:id", async (req, res) => {
+  const clientId = req.params.id;
+
+  const query = `
+    SELECT 
+        tbCliente.Nome, Telefone,
+        tbLogin.Email
+    FROM 
+        tbCliente
+    LEFT JOIN 
+        tbLogin ON tbCliente.Id = tbLogin.IdCli
+    LEFT JOIN 
+        tbCliente_Endereco ON tbCliente.CPF = tbCliente_Endereco.CPF
+    LEFT JOIN 
+        tbEndereco ON tbCliente_Endereco.CEP = tbEndereco.CEP
+    WHERE 
+        tbCliente.Id = ${clientId};;
+  `;
+
+  const [result] = await queryPromise(query, [clientId]);
+
+  res.json(result);
+});
+
+//ROTA PARA ALTERAR INFORMAÇÕES DE PERFIL DO USUARIO
+router.put("/:id", async (req, res) => {
+  const clientId = req.params.id;
+  const { Nome, Email, Telefone, currentPassword, newPassword } = req.body;
+
+  try {
+    //SE USUARIO ALTERAR A SENHA, ELE ENTRA NESSA CONDICIONAL
+    if (currentPassword || newPassword) {
+      const qGetCurrentPassword = `SELECT Senha FROM tblogin WHERE IdCli = ?`;
+
+      const result = await queryPromise(qGetCurrentPassword, [clientId]);
+
+      if (result.length === 0)
+        return res.status(404).json({ message: "Usuário não encontrado." });
+
+      const isPasswordValid = await bcryptjs.compare(
+        currentPassword,
+        result[0].Senha
+      );
+
+      if (!isPasswordValid)
+        return res.status(400).json({ message: "Senha atual incorreta." });
+
+      const qClient =
+        "UPDATE tbcliente set `Nome` = ?, `Email` = ? WHERE Id = ?";
+      const valuesClient = [Nome, Email, Telefone];
+      await executeUpdate(qClient, [valuesClient, clientId]);
+
+      //HASHA A NOVA SENHA QUE O USUARIO INSERIU E MANDA PRA TABELA
+      const hashedPassword = await bcryptjs.hash(newPassword, 10);
+      const qLogin =
+        "UPDATE tblogin SET `Email` = ?, `Senha` = ? WHERE IdCli = ?";
+      const valuesLogin = [Email, hashedPassword];
+      await executeUpdate(qLogin, [valuesLogin, clientId]);
+    }
+
+    //SE ELE ATUALIZAR DADOS SEM ALTERAR A SENHA, ELE ENTRA AQUI.
+    else {
+      const qClient =
+        "UPDATE tbcliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
+      const valuesClient = [Nome, Email, Telefone];
+      await executeUpdate(qClient, [valuesClient, clientId]);
+
+      const qLogin = "UPDATE tblogin SET `Email` = ? WHERE IdCli = ?";
+      const valuesLogin = [Email];
+      await executeUpdate(qLogin, [valuesLogin, clientId]);
+    }
+
+    res.json({ message: "Dados atualizados com sucesso!" });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//ROTA PARA PEGAR ENDEREÇO DO USUARIO
+router.get("/address/:id", async (req, res) => {
+  const clientId = req.params.id;
+
+  const query = `
+  SELECT 
+      tbEndereco.Cep,
+      tbEndereco.Logradouro,
+      tbNumero.Numero,
+      tbNumero.Complemento,
+      tbCidade.Nome AS Cidade,
+      tbEstado.Uf AS Estado
+  FROM 
+      tbCliente
+  INNER JOIN 
+      tbCliente_Endereco ON tbCliente.CPF = tbCliente_Endereco.CPF
+  INNER JOIN 
+      tbEndereco ON tbCliente_Endereco.CEP = tbEndereco.CEP
+  INNER JOIN 
+      tbNumero ON tbCliente.IdNum = tbNumero.Id
+  INNER JOIN 
+      tbCidade ON tbEndereco.IdCid = tbCidade.Id
+  INNER JOIN 
+      tbEstado ON tbEndereco.IdUf = tbEstado.Id
+  WHERE 
+      tbCliente.Id = ${clientId};
+`;
+
+  const [result] = await queryPromise(query, clientId);
+
+  res.json(result);
+});
+
+//ROTA PARA ATUALIZAR ENDEREÇO
+router.put("/address/:id", async (req, res) => {
+  const clientId = req.params.id;
+
+  try {
+    const q = `CALL AtualizaEndereco(?)`;
+
+    const valuesEndereco = [
+      req.body.Cep,
+      req.body.Logradouro,
+      req.body.Numero,
+      req.body.Complemento,
+      req.body.Cidade,
+      req.body.Estado,
+      clientId
+    ];
+
+    await executeQuery(q, valuesEndereco);
+
+    res.json({ message: "Endereço atualizado com sucesso!" });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 /*FUNÇÃO CRIADA PARA EXECUTAR A QUERY NO BANCO, PARA ENCURTAR A SINTAXE E FICAR MAIS DINÂMICO.
   PROMISE É UMA FORMA DE LIDAR COM OPERAÇÕES ASSÍNCRONAS EM JAVASCRIPT, PERMITINDO QUE EXECUTEMOS UM CÓDIGO QUANDO A OPERAÇÃO FOR
   BEM-SUCEDIDA OU QUANDO OCORRER UM ERRO. É UMA FORMA DE DEIXAR UM CÓDIGO MAIS LIMPO.
@@ -84,6 +220,30 @@ function executeQuery(query, values) {
     mySql.query(query, [values], (err) => {
       if (err) reject(err);
       else resolve();
+    });
+  });
+}
+
+/*
+  FUNÇÃO CRIADA PARA EXECUTAR UPDATE NO BANCO DE DADOS. ELE PEGA OS VALORES A SEREM ATUALIZADOS E O ID.
+*/
+function executeUpdate(query, [values, id]) {
+  return new Promise((resolve, reject) => {
+    mySql.query(query, [...values, id], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+/*
+  FUNÇÃO CRIADA PARA EXECUTAR CONSULTAS COM PARAMETROS.
+*/
+function queryPromise(query, params) {
+  return new Promise((resolve, reject) => {
+    mySql.query(query, params, (err, result) => {
+      if (err) reject(err);
+      else resolve(result);
     });
   });
 }
