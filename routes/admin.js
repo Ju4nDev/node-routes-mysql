@@ -1,12 +1,13 @@
 import express from "express";
-import mysql from "mysql";
+import mysql2 from "mysql2";
 import bcryptjs from "bcryptjs";
 
-const mySql = mysql.createPool({
+const mySql = mysql2.createPool({
   connectionLimit: 10,
-  host: "localhost",
-  user: "root",
-  password: "Juan140204.",
+  host: "liber-database-liber-database.k.aivencloud.com",
+  user: "avnadmin",
+  port: "11402",
+  password: "AVNS_lJtaSOsfd8-WNQ00Eb6",
   database: "bdLiber",
 });
 
@@ -19,7 +20,7 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const q = "SELECT * FROM tblogin WHERE Email = ? AND Adm = 1";
+  const q = "SELECT * FROM tbLogin WHERE Email = ? AND Adm = 1";
 
   mySql.query(q, [email], async (err, adminData) => {
     if (err) return res.json(err);
@@ -48,11 +49,11 @@ router.post("/", async (req, res) => {
     const qLogin = "CALL AddLogin(1, ?)";
 
     const valuesClient = [
-      req.body.Cpf,
+      req.body.CPF,
       req.body.Nome,
       req.body.Email,
       req.body.Telefone,
-      req.body.Cep,
+      req.body.CEP,
       req.body.Logradouro,
       req.body.Uf,
       req.body.NomeCid,

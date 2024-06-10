@@ -1,12 +1,13 @@
 import express from "express";
-import mysql from "mysql";
+import mysql2 from "mysql2";
 import bcryptjs from "bcryptjs";
 
-const mySql = mysql.createPool({
+const mySql = mysql2.createPool({
   connectionLimit: 10,
-  host: "localhost",
-  user: "root",
-  password: "Juan140204.",
+  host: "liber-database-liber-database.k.aivencloud.com",
+  user: "avnadmin",
+  port: "11402",
+  password: "AVNS_lJtaSOsfd8-WNQ00Eb6",
   database: "bdLiber",
 });
 
@@ -19,7 +20,7 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const q = "SELECT * FROM tblogin WHERE Email = ? AND Adm = 0";
+  const q = "SELECT * FROM tbLogin WHERE Email = ? AND Adm = 0";
 
   mySql.query(q, [email], async (err, clientData) => {
     if (err) return res.json(err);
@@ -47,23 +48,23 @@ router.post("/", async (req, res) => {
     const qLogin = "call AddLogin(0, ?)";
 
     const valuesClient = [
-      req.body.cpf,
-      req.body.nome,
-      req.body.email,
-      req.body.telefone,
-      req.body.cep,
-      req.body.logradouro,
-      req.body.uf,
-      req.body.nomeCid,
-      req.body.numeroEnd,
-      req.body.complemento,
+      req.body.CPF,
+      req.body.Nome,
+      req.body.Email,
+      req.body.Telefone,
+      req.body.CEP,
+      req.body.Logradouro,
+      req.body.Uf,
+      req.body.NomeCid,
+      req.body.NumeroEnd,
+      req.body.Complemento,
     ];
 
     // CRIPTOGRAFIA DE SENHA NO MYSQL
     const saltRounds = 10;
-    const hashedPassword = await bcryptjs.hash(req.body.senha, saltRounds);
+    const hashedPassword = await bcryptjs.hash(req.body.Senha, saltRounds);
 
-    const valuesLogin = [req.body.email, hashedPassword];
+    const valuesLogin = [req.body.Email, hashedPassword];
 
     await executeQuery(qClient, valuesClient);
     await executeQuery(qLogin, valuesLogin);
@@ -107,7 +108,7 @@ router.put("/:id", async (req, res) => {
   try {
     //SE USUARIO ALTERAR A SENHA, ELE ENTRA NESSA CONDICIONAL
     if (currentPassword || newPassword) {
-      const qGetCurrentPassword = `SELECT Senha FROM tblogin WHERE IdCli = ?`;
+      const qGetCurrentPassword = `SELECT Senha FROM tbLogin WHERE IdCli = ?`;
 
       const result = await queryPromise(qGetCurrentPassword, [clientId]);
 
@@ -123,14 +124,14 @@ router.put("/:id", async (req, res) => {
         return res.status(400).json({ message: "Senha atual incorreta." });
 
       const qClient =
-        "UPDATE tbcliente set `Nome` = ?, `Email` = ? WHERE Id = ?";
+        "UPDATE tbCliente set `Nome` = ?, `Email` = ? WHERE Id = ?";
       const valuesClient = [Nome, Email, Telefone];
       await executeUpdate(qClient, [valuesClient, clientId]);
 
       //HASHA A NOVA SENHA QUE O USUARIO INSERIU E MANDA PRA TABELA
       const hashedPassword = await bcryptjs.hash(newPassword, 10);
       const qLogin =
-        "UPDATE tblogin SET `Email` = ?, `Senha` = ? WHERE IdCli = ?";
+        "UPDATE tbLogin SET `Email` = ?, `Senha` = ? WHERE IdCli = ?";
       const valuesLogin = [Email, hashedPassword];
       await executeUpdate(qLogin, [valuesLogin, clientId]);
     }
@@ -138,11 +139,11 @@ router.put("/:id", async (req, res) => {
     //SE ELE ATUALIZAR DADOS SEM ALTERAR A SENHA, ELE ENTRA AQUI.
     else {
       const qClient =
-        "UPDATE tbcliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
+        "UPDATE tbCliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
       const valuesClient = [Nome, Email, Telefone];
       await executeUpdate(qClient, [valuesClient, clientId]);
 
-      const qLogin = "UPDATE tblogin SET `Email` = ? WHERE IdCli = ?";
+      const qLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
       const valuesLogin = [Email];
       await executeUpdate(qLogin, [valuesLogin, clientId]);
     }
@@ -159,7 +160,7 @@ router.get("/address/:id", async (req, res) => {
 
   const query = `
   SELECT 
-      tbEndereco.Cep,
+      tbEndereco.CEP,
       tbEndereco.Logradouro,
       tbNumero.Numero,
       tbNumero.Complemento,
@@ -194,7 +195,7 @@ router.put("/address/:id", async (req, res) => {
     const q = `CALL AtualizaEndereco(?)`;
 
     const valuesEndereco = [
-      req.body.Cep,
+      req.body.CEP,
       req.body.Logradouro,
       req.body.Numero,
       req.body.Complemento,
