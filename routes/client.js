@@ -1,6 +1,7 @@
 import express from "express";
 import mysql2 from "mysql2";
 import bcryptjs from "bcryptjs";
+import admin from "../config/firebase-admin-config";
 
 const mySql = mysql2.createPool({
   connectionLimit: 10,
@@ -12,6 +13,24 @@ const mySql = mysql2.createPool({
 });
 
 const router = express.Router();
+
+/* ROTA ESPECÍFICA PARA LOGIN COM O GOOGLE */
+router.post("/login/auth/google", async (req, res) => {
+  const { token } = req.body;
+
+  try{
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+
+    res.status(200).json({
+      message: "Autenticação bem sucedida.",
+      uid: uid
+    });
+  }
+  catch(err){
+    console.log("Autenticação falhou.", err);
+  }
+});
 
 /*
   ROTA PARA LOGIN. FOI USADO POST PARA GARANTIR SEGURANÇA NA URL, PARA QUE DADOS SENSIVEIS 
