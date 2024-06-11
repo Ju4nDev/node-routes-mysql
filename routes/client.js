@@ -63,7 +63,8 @@ router.post("/login", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const qClient = "call CadCli(?)";
-    const qLogin = "call AddLogin(0, ?)";
+
+    console.log(req.body);
 
     const valuesClient = [
       req.body.CPF,
@@ -78,14 +79,20 @@ router.post("/", async (req, res) => {
       req.body.Complemento,
     ];
 
-    // CRIPTOGRAFIA DE SENHA NO MYSQL
-    const saltRounds = 10;
-    const hashedPassword = await bcryptjs.hash(req.body.Senha, saltRounds);
+    if (req.body.Senha) {
+      const qLogin = "call AddLogin(0, ?)";
 
-    const valuesLogin = [req.body.Email, hashedPassword];
+      // CRIPTOGRAFIA DE SENHA NO MYSQL
+      const saltRounds = 10;
+      const hashedPassword = await bcryptjs.hash(req.body.Senha, saltRounds);
 
-    await executeQuery(qClient, valuesClient);
-    await executeQuery(qLogin, valuesLogin);
+      const valuesLogin = [req.body.Email, hashedPassword];
+
+      await executeQuery(qClient, valuesClient);
+      await executeQuery(qLogin, valuesLogin);
+    } else {
+      await executeQuery(qClient, valuesClient);
+    }
 
     res.json("Cliente cadastrado!");
   } catch (err) {
