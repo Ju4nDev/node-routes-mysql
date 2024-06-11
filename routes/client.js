@@ -1,7 +1,7 @@
 import express from "express";
 import mysql2 from "mysql2";
 import bcryptjs from "bcryptjs";
-import admin from "../config/firebase-admin-config";
+import admin from "../config/firebase-admin-config.js";
 
 const mySql = mysql2.createPool({
   connectionLimit: 10,
@@ -18,16 +18,15 @@ const router = express.Router();
 router.post("/login/auth/google", async (req, res) => {
   const { token } = req.body;
 
-  try{
+  try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
 
     res.status(200).json({
       message: "Autenticação bem sucedida.",
-      uid: uid
+      uid: uid,
     });
-  }
-  catch(err){
+  } catch (err) {
     console.log("Autenticação falhou.", err);
   }
 });
@@ -220,7 +219,7 @@ router.put("/address/:id", async (req, res) => {
       req.body.Complemento,
       req.body.Cidade,
       req.body.Estado,
-      clientId
+      clientId,
     ];
 
     await executeQuery(q, valuesEndereco);
