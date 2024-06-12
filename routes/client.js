@@ -21,11 +21,30 @@ router.post("/login/auth/google", async (req, res) => {
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
+    const email = decodedToken.email;
 
-    res.status(200).json({
-      message: "Autenticação bem sucedida.",
-      uid: uid,
-    });
+    const q = `SELECT * FROM tbCliente WHERE Email = ?`;
+
+    mySql.query(q, [email], (err, clientData) => {
+      if (err) res.json(err);
+      else{
+        if(clientData.length > 0){
+          const user = clientData[0];
+
+          res.status(200).json({
+            message: "Autenticação bem sucedida.",
+            uid: uid,
+            Id: user.Id,
+          });
+        }
+        else{
+          res.status(200).json({
+            message: "Autenticação bem sucedida.",
+            uid: uid,
+          });
+        }
+      }
+    })
   } catch (err) {
     console.log("Autenticação falhou.", err);
   }
@@ -60,11 +79,10 @@ router.post("/login", async (req, res) => {
   });
 });
 
+// ROTA PARA CADASTRAR USUARIO. TAMBÉM FAZ O CADASTRO DE USUARIO QUE LOGA COM GOOGLE
 router.post("/", async (req, res) => {
   try {
     const qClient = "call CadCli(?)";
-
-    console.log(req.body);
 
     const valuesClient = [
       req.body.CPF,
@@ -90,11 +108,29 @@ router.post("/", async (req, res) => {
 
       await executeQuery(qClient, valuesClient);
       await executeQuery(qLogin, valuesLogin);
-    } else {
+      res.json("Cliente cadastrado!");
+    } 
+    else {
       await executeQuery(qClient, valuesClient);
-    }
+      const q = `SELECT * FROM tbCliente WHERE Email = ?`;
 
-    res.json("Cliente cadastrado!");
+      mySql.query(q, [req.body.Email], async (err, clientData) => {
+        if (err) res.json(err);
+        else{
+          if(clientData.length > 0){
+            const user = clientData[0]; 
+
+            res.json({
+              message: "Cliente cadastrado!",
+              user: {Id: user.Id}
+          })
+          }
+          else {
+            res.json({ message: "Erro ao recuperar o ID do cliente." });
+          }
+        }
+      })
+    }
   } catch (err) {
     res.json(err);
   }
@@ -243,9 +279,9 @@ router.put("/address/:id", async (req, res) => {
 */
 function executeQuery(query, values) {
   return new Promise((resolve, reject) => {
-    mySql.query(query, [values], (err) => {
+    mySql.query(query, [values], (err, data) => {
       if (err) reject(err);
-      else resolve();
+      else resolve(data);
     });
   });
 }
