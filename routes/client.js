@@ -27,8 +27,8 @@ router.post("/login/auth/google", async (req, res) => {
 
     mySql.query(q, [email], (err, clientData) => {
       if (err) res.json(err);
-      else{
-        if(clientData.length > 0){
+      else {
+        if (clientData.length > 0) {
           const user = clientData[0];
 
           res.status(200).json({
@@ -36,15 +36,14 @@ router.post("/login/auth/google", async (req, res) => {
             uid: uid,
             Id: user.Id,
           });
-        }
-        else{
+        } else {
           res.status(200).json({
             message: "Autenticação bem sucedida.",
             uid: uid,
           });
         }
       }
-    })
+    });
   } catch (err) {
     console.log("Autenticação falhou.", err);
   }
@@ -53,17 +52,17 @@ router.post("/login/auth/google", async (req, res) => {
 router.post("/login/auth/facebook", async (req, res) => {
   const { token } = req.body;
 
-  try{
+  try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
     const email = decodedToken.email;
- 
+
     const q = `SELECT * FROM tbCliente WHERE Email = ?`;
 
     mySql.query(q, [email], (err, clientData) => {
       if (err) res.json(err);
-      else{
-        if(clientData.length > 0){
+      else {
+        if (clientData.length > 0) {
           const user = clientData[0];
 
           res.status(200).json({
@@ -71,20 +70,18 @@ router.post("/login/auth/facebook", async (req, res) => {
             uid: uid,
             Id: user.Id,
           });
-        }
-        else{
+        } else {
           res.status(200).json({
             message: "Autenticação bem sucedida.",
             uid: uid,
           });
         }
       }
-    })
-  }
-  catch(err){
+    });
+  } catch (err) {
     console.log("Autenticação falhou.", err);
   }
-})
+});
 
 /*
   ROTA PARA LOGIN. FOI USADO POST PARA GARANTIR SEGURANÇA NA URL, PARA QUE DADOS SENSIVEIS 
@@ -145,27 +142,25 @@ router.post("/", async (req, res) => {
       await executeQuery(qClient, valuesClient);
       await executeQuery(qLogin, valuesLogin);
       res.json("Cliente cadastrado!");
-    } 
-    else {
+    } else {
       await executeQuery(qClient, valuesClient);
       const q = `SELECT * FROM tbCliente WHERE Email = ?`;
 
       mySql.query(q, [req.body.Email], async (err, clientData) => {
         if (err) res.json(err);
-        else{
-          if(clientData.length > 0){
-            const user = clientData[0]; 
+        else {
+          if (clientData.length > 0) {
+            const user = clientData[0];
 
             res.json({
               message: "Cliente cadastrado!",
-              user: {Id: user.Id}
-          })
-          }
-          else {
+              user: { Id: user.Id },
+            });
+          } else {
             res.json({ message: "Erro ao recuperar o ID do cliente." });
           }
         }
-      })
+      });
     }
   } catch (err) {
     res.json(err);
@@ -235,14 +230,21 @@ router.put("/:id", async (req, res) => {
 
     //SE ELE ATUALIZAR DADOS SEM ALTERAR A SENHA, ELE ENTRA AQUI.
     else {
-      const qClient =
-        "UPDATE tbCliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
-      const valuesClient = [Nome, Email, Telefone];
-      await executeUpdate(qClient, [valuesClient, clientId]);
+      if (!Email) {
+        const qClient =
+          "UPDATE tbCliente set `Nome` = ?, `Telefone` = ? WHERE Id = ?";
+        const valuesClient = [Nome, Telefone];
+        await executeUpdate(qClient, [valuesClient, clientId]);
+      } else {
+        const qClient =
+          "UPDATE tbCliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
+        const valuesClient = [Nome, Email, Telefone];
+        await executeUpdate(qClient, [valuesClient, clientId]);
 
-      const qLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
-      const valuesLogin = [Email];
-      await executeUpdate(qLogin, [valuesLogin, clientId]);
+        const qLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
+        const valuesLogin = [Email];
+        await executeUpdate(qLogin, [valuesLogin, clientId]);
+      }
     }
 
     res.json({ message: "Dados atualizados com sucesso!" });
