@@ -50,6 +50,42 @@ router.post("/login/auth/google", async (req, res) => {
   }
 });
 
+router.post("/login/auth/facebook", async (req, res) => {
+  const { token } = req.body;
+
+  try{
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    const email = decodedToken.email;
+ 
+    const q = `SELECT * FROM tbCliente WHERE Email = ?`;
+
+    mySql.query(q, [email], (err, clientData) => {
+      if (err) res.json(err);
+      else{
+        if(clientData.length > 0){
+          const user = clientData[0];
+
+          res.status(200).json({
+            message: "Autenticação bem sucedida.",
+            uid: uid,
+            Id: user.Id,
+          });
+        }
+        else{
+          res.status(200).json({
+            message: "Autenticação bem sucedida.",
+            uid: uid,
+          });
+        }
+      }
+    })
+  }
+  catch(err){
+    console.log("Autenticação falhou.", err);
+  }
+})
+
 /*
   ROTA PARA LOGIN. FOI USADO POST PARA GARANTIR SEGURANÇA NA URL, PARA QUE DADOS SENSIVEIS 
   NÃO APAREÇAM. ESTAMOS PASSANDO OS PARAMETROS EM UM CORPO JSON.
