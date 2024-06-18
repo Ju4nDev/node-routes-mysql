@@ -5,7 +5,8 @@ import FormData from "form-data";
 import fs from "fs";
 
 const router = express.Router();
-const upload = multer({ dest: "tmp/" });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 //ROTA QUE TRAZ TODOS OS LIVROS DA API
 router.get("/", async (req, res) => {
@@ -87,7 +88,10 @@ router.get("/images", async (req, res) => {
 router.post("/images", upload.single("image"), async (req, res) => {
   try {
     const form = new FormData();
-    form.append("image", fs.createReadStream(req.file.path));
+    form.append("image", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
 
     console.log(form);
 
