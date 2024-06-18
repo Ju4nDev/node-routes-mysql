@@ -5,7 +5,7 @@ import FormData from "form-data";
 import fs from "fs";
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: "tmp/" });
 
 //ROTA QUE TRAZ TODOS OS LIVROS DA API
 router.get("/", async (req, res) => {
