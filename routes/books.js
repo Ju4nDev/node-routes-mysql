@@ -2,10 +2,10 @@ import express from "express";
 import axios from "axios";
 import multer from "multer";
 import FormData from "form-data";
-import fs from 'fs';
+import fs from "fs";
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: "uploads/" });
 
 //ROTA QUE TRAZ TODOS OS LIVROS DA API
 router.get("/", async (req, res) => {
@@ -84,7 +84,7 @@ router.get("/images", async (req, res) => {
 });
 
 //ROTA QUE CADASTRA A IMAGEM DO LIVRO
-router.post("/images", upload.single('image'), async (req, res) => {
+router.post("/images", upload.single("image"), async (req, res) => {
   try {
     const form = new FormData();
     form.append("image", fs.createReadStream(req.file.path));
@@ -93,11 +93,13 @@ router.post("/images", upload.single('image'), async (req, res) => {
 
     const response = await axios.post(
       `https://liber-api.onrender.com/book/images`,
-      form, {
+      form,
+      {
         headers: {
           ...form.getHeaders(),
         },
-      });
+      }
+    );
 
     res.json(response.data.name);
   } catch (err) {
