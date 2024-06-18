@@ -1,7 +1,11 @@
 import express from "express";
 import axios from "axios";
+import multer from "multer";
+import FormData from "form-data";
+import fs from 'fs';
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
 //ROTA QUE TRAZ TODOS OS LIVROS DA API
 router.get("/", async (req, res) => {
@@ -29,19 +33,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-//ROTA QUE TRAZ TODOS AS IMAGENS DOS LIVROS DA API
-router.get("/images", async (req, res) => {
-  try {
-    const response = await axios.get(
-      "https://liber-api.onrender.com/book/images"
-    );
-    res.json(response.data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ err: "Erro ao buscar as informações do livro" });
-  }
-});
-
 //ROTA QUE CADASTRA UM LIVRO
 router.post("/", async (req, res) => {
   try {
@@ -50,24 +41,6 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ err: "Erro ao enviar as informações do livro" });
-  }
-});
-
-//ROTA QUE CADASTRA A IMAGEM DO LIVRO
-router.post("/images/:id", async (req, res) => {
-  const bookId = req.params.id;
-
-  try {
-    await axios.post(
-      `https://liber-api.onrender.com/book/images/${bookId}`,
-      req.body
-    );
-    res.json("Imagem cadastrada com sucesso!");
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ err: "Erro ao enviar as informações da imagem do livro" });
   }
 });
 
@@ -94,6 +67,44 @@ router.delete("/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ err: "Erro ao deletar as informações do livro" });
+  }
+});
+
+//ROTA QUE TRAZ TODOS AS IMAGENS DOS LIVROS DA API
+router.get("/images", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://liber-api.onrender.com/book/images"
+    );
+    res.json(response.data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ err: "Erro ao buscar as informações do livro" });
+  }
+});
+
+//ROTA QUE CADASTRA A IMAGEM DO LIVRO
+router.post("/images", upload.single('image'), async (req, res) => {
+  try {
+    const form = new FormData();
+    form.append("image", fs.createReadStream(req.file.path));
+
+    console.log(form);
+
+    const response = await axios.post(
+      `https://liber-api.onrender.com/book/images`,
+      form, {
+        headers: {
+          ...form.getHeaders(),
+        },
+      });
+
+    res.json(response.data.name);
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ err: "Erro ao enviar as informações da imagem do livro" });
   }
 });
 
