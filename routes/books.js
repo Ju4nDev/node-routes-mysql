@@ -2,7 +2,16 @@ import express from "express";
 import axios from "axios";
 import multer from "multer";
 import FormData from "form-data";
-import fs from "fs";
+import mysql2 from "mysql2";
+
+const mySql = mysql2.createPool({
+  connectionLimit: 10,
+  host: "liber-database-liber-database.k.aivencloud.com",
+  user: "avnadmin",
+  port: "11402",
+  password: "AVNS_lJtaSOsfd8-WNQ00Eb6",
+  database: "bdLiber",
+});
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -124,5 +133,24 @@ router.delete("/images", async (req, res) => {
     res.status(500).json({ err: "Erro ao deletar as informações do livro" });
   }
 });
+
+router.get("/admin/books", async (req, res) => {
+  try{
+    const query = `
+    select tbLivro.Id, tbLivro.Preco, tbEditora.Nome as "Editora", tbAutor.Nome as "Autor", tbGeneroLiv.Genero as "Genero"
+    from tbLivro
+    inner join tbEditora on tbLivro.IdEdit = tbEditora.Id
+    inner join tbAutor on tbLivro.IdAutor = tbAutor.Id
+    inner join tbGeneroLiv on tbLivro.IdGenero = tbGeneroLiv.Id;
+  `;
+
+  mySql.query(query, (err, data) => {
+    err ? res.json(err) : res.json(data);
+  })
+  }
+  catch(err){
+    console.log("Erro ao buscar os livros", err);
+  }
+})
 
 export default router;
