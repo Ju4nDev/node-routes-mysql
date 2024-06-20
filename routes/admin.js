@@ -32,7 +32,7 @@ router.post("/login", async (req, res) => {
         const match = await bcryptjs.compare(password, user.Senha);
 
         if(match)
-          res.json({ message: "Login Successful", user: { Email: user.Email } });
+          res.json({ message: "Login Successful", user: { Id: user.Id } });
         else
           res.json({ message: "Invalid credentials" });
       } 
@@ -41,6 +41,26 @@ router.post("/login", async (req, res) => {
     }
   });
 });
+
+router.get("/:id", async (req, res) => {
+  const adminId = req.params.id;
+
+  try{
+    const query = `
+    select tbCliente.Nome, tbCliente.Telefone, tbLogin.Email 
+    from tbCliente
+    inner join tbLogin on tbCliente.Id = tbLogin.IdCli 
+    where tbCliente.Id = ${adminId} and tbLogin.Adm = 1; 
+    `;
+
+    const [result] = await queryPromise(query, [adminId]);
+
+    res.json(result);
+  }
+  catch(err){
+
+  }
+})
 
 //ROTA PARA CADASTRAR FUNCIONÁRIO COM HASH NA SENHA
 router.post("/", async (req, res) => {
@@ -77,6 +97,34 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  const adminId = req.params.id;
+  const {Nome, Email, Telefone, password} = req.body;
+
+  try{
+    if(password){
+      const hashedPassword = await bcryptjs.hash(password, 10);
+      const queryPassword = "UPDATE tbLogin SET `Senha` = ? WHERE IdCli = ?";
+      const valuesPassword = [hashedPassword];
+      
+      await executeUpdate(queryPassword, [valuesPassword, adminId]);
+    }
+    const queryAdmin = "UPDATE tbCliente SET `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
+    const queryLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
+    
+    const valuesAdmin = [Nome, Email, Telefone];
+    const valuesLogin = [Email];
+
+    await executeUpdate(queryAdmin, [valuesAdmin, adminId]);
+    await executeUpdate(queryLogin, [valuesLogin, adminId]);
+
+    res.json({ message: "Dados atualizados com sucesso!" })
+  }
+  catch(err){
+    console.log("Erro ao atualizar os dados.", err);
+  }
+})
+
 /*FUNÇÃO CRIADA PARA EXECUTAR A QUERY NO BANCO, PARA ENCURTAR A SINTAXE E FICAR MAIS DINÂMICO.
   PROMISE É UMA FORMA DE LIDAR COM OPERAÇÕES ASSÍNCRONAS EM JAVASCRIPT, PERMITINDO QUE EXECUTEMOS UM CÓDIGO QUANDO A OPERAÇÃO FOR
   BEM-SUCEDIDA OU QUANDO OCORRER UM ERRO. É UMA FORMA DE DEIXAR UM CÓDIGO MAIS LIMPO.
@@ -89,5 +137,30 @@ function executeQuery(query, values) {
     });
   });
 }
+
+/*
+  FUNÇÃO CRIADA PARA EXECUTAR CONSULTAS COM PARAMETROS.
+*/
+function queryPromise(query, params) {
+  return new Promise((resolve, reject) => {
+    mySql.query(query, params, (err, result) => {
+      if (err) reject(err);
+      else resolve(result);
+    });
+  });
+}
+
+/*
+  FUNÇÃO CRIADA PARA EXECUTAR UPDATE NO BANCO DE DADOS. ELE PEGA OS VALORES A SEREM ATUALIZADOS E O ID.
+*/
+function executeUpdate(query, [values, id]) {
+  return new Promise((resolve, reject) => {
+    mySql.query(query, [...values, id], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 
 export default router;
