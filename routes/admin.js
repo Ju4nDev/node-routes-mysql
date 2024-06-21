@@ -62,12 +62,16 @@ router.post("/", async (req, res) => {
     const qClient = "CALL CadCli(?)";
     const qLogin = "CALL AddLogin(1, ?)";
 
+    const cleanedCPF = cleanInput(req.body.CPF);
+    const cleanedTelefone = cleanInput(req.body.Telefone);
+    const cleanedCEP = cleanInput(req.body.CEP);
+
     const valuesClient = [
-      req.body.CPF,
+      cleanedCPF,
       req.body.Nome,
       req.body.Email,
-      req.body.Telefone,
-      req.body.CEP,
+      cleanedTelefone,
+      cleanedCEP,
       req.body.Logradouro,
       req.body.Uf,
       req.body.NomeCid,
@@ -94,6 +98,8 @@ router.put("/:id", async (req, res) => {
   const adminId = req.params.id;
   const { Nome, Email, Telefone, password } = req.body;
 
+  const cleanedTelefone = cleanInput(Telefone);
+
   try {
     if (password) {
       const hashedPassword = await bcryptjs.hash(password, 10);
@@ -106,7 +112,7 @@ router.put("/:id", async (req, res) => {
       "UPDATE tbCliente SET `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
     const queryLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
 
-    const valuesAdmin = [Nome, Email, Telefone];
+    const valuesAdmin = [Nome, Email, cleanedTelefone];
     const valuesLogin = [Email];
 
     await executeUpdate(queryAdmin, [valuesAdmin, adminId]);
@@ -154,5 +160,10 @@ function executeUpdate(query, [values, id]) {
     });
   });
 }
+
+/* FUNÇÃO COM REGEX PARA LIMPAR CPF, TELEFONE E CEP */
+function cleanInput(input) {
+  return input.replace(/[.\-]/g, '');
+};
 
 export default router;

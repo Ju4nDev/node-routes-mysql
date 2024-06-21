@@ -117,12 +117,16 @@ router.post("/", async (req, res) => {
   try {
     const qClient = "call CadCli(?)";
 
+    const cleanedCPF = cleanInput(req.body.CPF);
+    const cleanedTelefone = cleanInput(req.body.Telefone);
+    const cleanedCEP = cleanInput(req.body.CEP);
+
     const valuesClient = [
-      req.body.CPF,
+      cleanedCPF,
       req.body.Nome,
       req.body.Email,
-      req.body.Telefone,
-      req.body.CEP,
+      cleanedTelefone,
+      cleanedCEP,
       req.body.Logradouro,
       req.body.Uf,
       req.body.NomeCid,
@@ -249,7 +253,7 @@ router.put("/:id", async (req, res) => {
 
     res.json({ message: "Dados atualizados com sucesso!" });
   } catch (err) {
-    console.log(err);
+    console.log("Erro ao atualizar os dados.", err);
   }
 });
 
@@ -307,7 +311,7 @@ router.put("/address/:id", async (req, res) => {
 
     res.json({ message: "Endereço atualizado com sucesso!" });
   } catch (err) {
-    console.log(err);
+    console.log("Erro ao atualizar o endereço.", err);
   }
 });
 
@@ -347,5 +351,10 @@ function queryPromise(query, params) {
     });
   });
 }
+
+/* FUNÇÃO COM REGEX PARA LIMPAR CPF, TELEFONE E CEP */
+function cleanInput(input) {
+  return input.replace(/[.\-]/g, '');
+};
 
 export default router;
