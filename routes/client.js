@@ -201,6 +201,8 @@ router.put("/:id", async (req, res) => {
   const clientId = req.params.id;
   const { Nome, Email, Telefone, currentPassword, newPassword } = req.body;
 
+  const cleanedTelefone = cleanInput(Telefone);
+
   try {
     //SE USUARIO ALTERAR A SENHA, ELE ENTRA NESSA CONDICIONAL
     if (currentPassword || newPassword) {
@@ -221,7 +223,7 @@ router.put("/:id", async (req, res) => {
 
       const qClient =
         "UPDATE tbCliente set `Nome` = ?, `Email` = ? WHERE Id = ?";
-      const valuesClient = [Nome, Email, Telefone];
+      const valuesClient = [Nome, Email, cleanedTelefone];
       await executeUpdate(qClient, [valuesClient, clientId]);
 
       //HASHA A NOVA SENHA QUE O USUARIO INSERIU E MANDA PRA TABELA
@@ -237,12 +239,12 @@ router.put("/:id", async (req, res) => {
       if (!Email) {
         const qClient =
           "UPDATE tbCliente set `Nome` = ?, `Telefone` = ? WHERE Id = ?";
-        const valuesClient = [Nome, Telefone];
+        const valuesClient = [Nome, cleanedTelefone];
         await executeUpdate(qClient, [valuesClient, clientId]);
       } else {
         const qClient =
           "UPDATE tbCliente set `Nome` = ?, `Email` = ?, `Telefone` = ? WHERE Id = ?";
-        const valuesClient = [Nome, Email, Telefone];
+        const valuesClient = [Nome, Email, cleanedTelefone];
         await executeUpdate(qClient, [valuesClient, clientId]);
 
         const qLogin = "UPDATE tbLogin SET `Email` = ? WHERE IdCli = ?";
@@ -294,11 +296,13 @@ router.get("/address/:id", async (req, res) => {
 router.put("/address/:id", async (req, res) => {
   const clientId = req.params.id;
 
+  const cleanedCEP = cleanInput(req.body.CEP);
+
   try {
     const q = `CALL AtualizaEndereco(?)`;
 
     const valuesEndereco = [
-      req.body.CEP,
+      cleanedCEP,
       req.body.Logradouro,
       req.body.Numero,
       req.body.Complemento,
