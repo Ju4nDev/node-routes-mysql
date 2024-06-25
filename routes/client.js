@@ -358,7 +358,7 @@ function queryPromise(query, params) {
 
 /* FUNÇÃO COM REGEX PARA LIMPAR CPF, TELEFONE E CEP */
 function cleanInput(input) {
-  return input.replace(/[.\-]/g, '');
+  return input.replace(/[.\-()\s]/g, '');
 };
 
 export default router;
